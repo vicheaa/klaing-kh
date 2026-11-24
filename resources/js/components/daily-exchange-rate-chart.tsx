@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { PointerEvent } from 'react';
+import type { PointerEvent, ReactNode } from 'react';
 
 export type DailyRate = {
     effective_date: string;
@@ -13,12 +13,12 @@ const rightPadding = 16;
 export function DailyExchangeRateChart({
     points,
     formatRate,
-    formatDate,
+    renderDate,
     rateLabel,
 }: {
     points: DailyRate[];
     formatRate: Intl.NumberFormat;
-    formatDate: Intl.DateTimeFormat;
+    renderDate: (date: string) => ReactNode;
     rateLabel: string;
 }) {
     const canvas = useRef<HTMLCanvasElement>(null);
@@ -175,7 +175,7 @@ export function DailyExchangeRateChart({
                     dateTime={activePoint.effective_date}
                     className="text-muted-foreground"
                 >
-                    {formatDate.format(new Date(activePoint.effective_date))}
+                    {renderDate(activePoint.effective_date)}
                 </time>
             </figcaption>
             <canvas
@@ -188,12 +188,10 @@ export function DailyExchangeRateChart({
             {elapsed > 0 && (
                 <div className="ml-[72px] flex justify-between text-xs text-muted-foreground">
                     <time dateTime={points[0].effective_date}>
-                        {formatDate.format(new Date(points[0].effective_date))}
+                        {renderDate(points[0].effective_date)}
                     </time>
                     <time dateTime={points[points.length - 1].effective_date}>
-                        {formatDate.format(
-                            new Date(points[points.length - 1].effective_date),
-                        )}
+                        {renderDate(points[points.length - 1].effective_date)}
                     </time>
                 </div>
             )}

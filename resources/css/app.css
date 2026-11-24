@@ -16,7 +16,9 @@
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
+}
 
+@theme inline {
     --color-background: var(--background);
     --color-foreground: var(--foreground);
 
@@ -50,6 +52,7 @@
     --color-chart-3: var(--chart-3);
     --color-chart-4: var(--chart-4);
     --color-chart-5: var(--chart-5);
+    --color-public-canvas: var(--public-canvas);
 
     --color-sidebar: var(--sidebar);
     --color-sidebar-foreground: var(--sidebar-foreground);
@@ -132,7 +135,52 @@
     --sidebar-ring: oklch(0.439 0 0);
 }
 
+.public-theme {
+    --public-canvas: #f5f6f0;
+    --background: #fffefa;
+    --foreground: #1b3025;
+    --card: var(--background);
+    --card-foreground: var(--foreground);
+    --popover: var(--background);
+    --popover-foreground: var(--foreground);
+    --primary: #24543b;
+    --primary-foreground: #f8fbf3;
+    --secondary: #e8f0e5;
+    --secondary-foreground: #24543b;
+    --muted: #f0f3eb;
+    --muted-foreground: #506356;
+    --accent: #e4eee2;
+    --accent-foreground: #224e37;
+    --border: #dce4d8;
+    --input: #d3ded1;
+    --ring: #467859;
+    --chart-1: #307451;
+}
+
+.dark .public-theme {
+    --public-canvas: #121b16;
+    --background: #19251e;
+    --foreground: #eef5e9;
+    --primary: #a4cfae;
+    --primary-foreground: #152c1e;
+    --secondary: #253b2d;
+    --secondary-foreground: #c8e5c9;
+    --muted: #202e25;
+    --muted-foreground: #b3c5b5;
+    --accent: #263d2f;
+    --accent-foreground: #d2e8ce;
+    --border: #324537;
+    --input: #465b4a;
+    --ring: #92bb9e;
+    --chart-1: #9bd0aa;
+}
+
 @layer base {
+    /* Radix reserves space for the scrollbar while a currency menu is open. */
+    html:has(.public-theme > main):not(:has(body[data-scroll-locked])) {
+        scrollbar-gutter: stable;
+    }
+
     * {
         @apply border-border outline-ring/50;
     }

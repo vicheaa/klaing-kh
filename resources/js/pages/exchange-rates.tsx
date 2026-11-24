@@ -1,7 +1,7 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, ArrowLeftRight, ArrowUpRight } from 'lucide-react';
+import { Link, router, useForm } from '@inertiajs/react';
+import { ArrowLeftRight, ArrowUpRight } from 'lucide-react';
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { DailyExchangeRateChart } from '@/components/daily-exchange-rate-chart';
 import type { DailyRate } from '@/components/daily-exchange-rate-chart';
 import InputError from '@/components/input-error';
@@ -17,15 +17,18 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { home } from '@/routes';
+import PublicLayout, {
+    LanguageText,
+    PublicPageHeading,
+} from '@/layouts/public-layout';
+import type { PublicLanguage } from '@/layouts/public-layout';
+import { cn } from '@/lib/utils';
 import { index } from '@/routes/exchange-rates';
 
 const translations = {
     en: {
-        home: 'Home',
         title: 'Exchange rates',
-        description:
-            'Convert an amount and view daily rates for your selected currencies.',
+        description: 'Convert currencies and view daily exchange rates.',
         converter: 'Currency converter',
         amount: 'Amount',
         sourceCurrency: 'From currency',
@@ -50,7 +53,6 @@ const translations = {
         noResults: 'No rates were found for these dates.',
         source: 'View rate source',
         publisher: 'National Bank of Cambodia',
-        disclaimer: 'Independent public information platform.',
         from: 'From',
         to: 'To',
         apply: 'Apply filters',
@@ -62,9 +64,8 @@ const translations = {
         of: 'of',
     },
     km: {
-        home: 'ទំព័រដើម',
         title: 'អត្រាប្តូរប្រាក់',
-        description: 'ប្តូរចំនួនទឹកប្រាក់ និងមើលអត្រាប្រចាំថ្ងៃសម្រាប់រូបិយប័ណ្ណដែលបានជ្រើសរើស។',
+        description: 'ប្តូរប្រាក់ និងមើលអត្រាប្តូរប្រាក់ប្រចាំថ្ងៃ។',
         converter: 'គណនាអត្រាប្តូរប្រាក់',
         amount: 'ចំនួនទឹកប្រាក់',
         sourceCurrency: 'ពីរូបិយប័ណ្ណ',
@@ -87,7 +88,6 @@ const translations = {
         noResults: 'មិនមានអត្រាសម្រាប់កាលបរិច្ឆេទទាំងនេះទេ។',
         source: 'មើលប្រភពអត្រា',
         publisher: 'ធនាគារជាតិនៃកម្ពុជា',
-        disclaimer: 'វេទិកាព័ត៌មានសាធារណៈឯករាជ្យ។',
         from: 'ចាប់ពី',
         to: 'ដល់',
         apply: 'ស្វែងរក',
@@ -99,8 +99,6 @@ const translations = {
         of: 'នៃ',
     },
 };
-
-type Language = keyof typeof translations;
 
 type DisplayRate = DailyRate & {
     base_currency: string;
@@ -123,8 +121,43 @@ type PageProps = {
     };
     pagination: { page: number; last_page: number };
     filters: { from: string | null; to: string | null };
-    language: Language;
+    language: PublicLanguage;
 };
+
+const khmerMonths = [
+    'មករា',
+    'កុម្ភៈ',
+    'មីនា',
+    'មេសា',
+    'ឧសភា',
+    'មិថុនា',
+    'កក្កដា',
+    'សីហា',
+    'កញ្ញា',
+    'តុលា',
+    'វិច្ឆិកា',
+    'ធ្នូ',
+];
+const englishDate = new Intl.DateTimeFormat('en-KH', {
+    dateStyle: 'medium',
+    timeZone: 'Asia/Phnom_Penh',
+});
+const dateParts = new Intl.DateTimeFormat('en-US', {
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+    timeZone: 'Asia/Phnom_Penh',
+});
+
+function formatKhmerDate(date: Date): string {
+    // Browser support for Khmer date formatting varies, including during hydration.
+    const parts = new Map(
+        dateParts.formatToParts(date).map(({ type, value }) => [type, value]),
+    );
+    const month = khmerMonths[Number(parts.get('month')) - 1];
+
+    return `${parts.get('day')} ${month} ${parts.get('year')}`;
+}
 
 function CurrencySelect({
     id,
@@ -136,7 +169,7 @@ function CurrencySelect({
     onChange,
 }: {
     id: string;
-    label: string;
+    label: ReactNode;
     value: string;
     currencies: string[];
     names: Intl.DisplayNames;
@@ -144,13 +177,16 @@ function CurrencySelect({
     onChange: (currency: string) => void;
 }) {
     return (
-        <div className="grid min-w-0 gap-2">
+        <div className="grid min-w-0 grid-cols-1 gap-2">
             <Label htmlFor={id}>{label}</Label>
             <Select value={value} onValueChange={onChange} disabled={disabled}>
-                <SelectTrigger id={id} className="w-full">
+                <SelectTrigger
+                    id={id}
+                    className="w-full min-w-0 *:data-[slot=select-value]:block *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:truncate max-sm:gap-1 max-sm:px-2"
+                >
                     <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="public-theme" avoidCollisions>
                     {currencies.map((currency) => {
                         const name = names.of(
                             currency === 'SDR' ? 'XDR' : currency,
@@ -193,16 +229,12 @@ export default function ExchangeRates({
     const formatRate = new Intl.NumberFormat(locale, {
         maximumFractionDigits: 10,
     });
-    const formatDate = new Intl.DateTimeFormat(locale, {
-        dateStyle: 'medium',
-        timeZone: 'Asia/Phnom_Penh',
-    });
     const form = useForm({
         from: filters.from ?? '',
         to: filters.to ?? '',
     });
     const alternateLanguage = language === 'km' ? 'en' : 'km';
-    const pageLink = (page: number, lang: Language = language) =>
+    const pageLink = (page: number, lang: PublicLanguage = language) =>
         index({ query: { ...filters, ...pair, lang, page } });
     const sameCurrency = pair.base === pair.quote;
     const unitRate = sameCurrency ? 1 : latest ? Number(latest.rate) : null;
@@ -223,6 +255,30 @@ export default function ExchangeRates({
 
     const rateLabel = `${pair.quote} / ${pair.base}`;
     const pairLabel = `${pair.base}/${pair.quote}`;
+
+    function translatedText(key: keyof typeof translations.en) {
+        return (
+            <LanguageText
+                language={language}
+                en={translations.en[key]}
+                km={translations.km[key]}
+            />
+        );
+    }
+
+    function renderDate(date: string, label?: 'effective' | 'synced') {
+        const time = new Date(date);
+        const en = englishDate.format(time);
+        const km = formatKhmerDate(time);
+
+        return (
+            <LanguageText
+                language={language}
+                en={label ? `${translations.en[label]} ${en}` : en}
+                km={label ? `${translations.km[label]} ${km}` : km}
+            />
+        );
+    }
 
     function changeCurrencies(base: string, quote: string) {
         setUpdatingPair(true);
@@ -248,52 +304,41 @@ export default function ExchangeRates({
     const selectedDates = filters.from !== null || filters.to !== null;
 
     return (
-        <div
-            lang={language}
-            className="min-h-screen bg-muted/35 text-foreground"
+        <PublicLayout
+            title={copy.title}
+            language={language}
+            section="rates"
+            languageHref={pageLink(pagination.page, alternateLanguage)}
         >
-            <Head title={copy.title} />
-            <header className="border-b bg-background">
-                <nav className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
-                    <Button asChild variant="ghost" size="sm">
-                        <Link href={home()}>
-                            <ArrowLeft aria-hidden="true" />
-                            {copy.home}
-                        </Link>
-                    </Button>
-                    <Button asChild variant="outline" size="sm">
-                        <Link
-                            href={pageLink(pagination.page, alternateLanguage)}
-                            preserveState
-                            hrefLang={alternateLanguage}
-                            lang={alternateLanguage}
-                        >
-                            {alternateLanguage === 'km' ? 'ខ្មែរ' : 'English'}
-                        </Link>
-                    </Button>
-                </nav>
-            </header>
+            <PublicPageHeading
+                icon={ArrowLeftRight}
+                title={copy.title}
+                description={copy.description}
+            />
 
-            <main className="mx-auto grid max-w-4xl gap-6 px-5 py-8 sm:px-8 sm:py-12">
-                <div>
-                    <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                        {copy.title}
-                    </h1>
-                    <p className="mt-2 text-muted-foreground">
-                        {copy.description}
-                    </p>
-                </div>
-
-                <Card>
+            <div
+                className={cn(
+                    'grid gap-5',
+                    !sameCurrency &&
+                        'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]',
+                )}
+            >
+                <Card className="min-w-0 rounded-2xl shadow-none">
                     <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
-                        <CardTitle>{copy.converter}</CardTitle>
+                        <CardTitle>
+                            <h2 className="text-lg leading-tight">
+                                {translatedText('converter')}
+                            </h2>
+                        </CardTitle>
                         {meta.is_stale && (
-                            <Badge variant="secondary">{copy.stale}</Badge>
+                            <Badge variant="secondary">
+                                {translatedText('stale')}
+                            </Badge>
                         )}
                     </CardHeader>
-                    <CardContent className="grid gap-5">
-                        <div className="grid items-end gap-3 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto_minmax(0,1.2fr)]">
-                            <div className="grid gap-2">
+                    <CardContent className="grid grid-cols-1 gap-5">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-3">
+                            <div className="col-span-full grid gap-2">
                                 <Label htmlFor="exchange-amount">
                                     {copy.amount}
                                 </Label>
@@ -311,7 +356,7 @@ export default function ExchangeRates({
                             </div>
                             <CurrencySelect
                                 id="exchange-base"
-                                label={copy.sourceCurrency}
+                                label={translatedText('sourceCurrency')}
                                 value={pair.base}
                                 currencies={currencies}
                                 names={currencyNames}
@@ -339,7 +384,7 @@ export default function ExchangeRates({
                             </Button>
                             <CurrencySelect
                                 id="exchange-quote"
-                                label={copy.targetCurrency}
+                                label={translatedText('targetCurrency')}
                                 value={pair.quote}
                                 currencies={currencies}
                                 names={currencyNames}
@@ -353,12 +398,12 @@ export default function ExchangeRates({
                         <div
                             role="status"
                             aria-busy={updatingPair}
-                            className="grid gap-1 rounded-lg border bg-muted/50 p-4 sm:p-5"
+                            className="grid grid-cols-1 gap-1 rounded-xl border bg-accent/65 p-4 sm:p-5"
                         >
                             <p className="text-sm font-medium text-muted-foreground">
-                                {copy.result}
+                                {translatedText('result')}
                             </p>
-                            <p className="text-2xl font-semibold tracking-tight break-words tabular-nums sm:text-3xl">
+                            <p className="text-3xl font-semibold tracking-tight wrap-anywhere text-primary tabular-nums sm:text-4xl">
                                 {resultText}
                             </p>
                             {latest && !updatingPair && (
@@ -367,10 +412,10 @@ export default function ExchangeRates({
                                     {formatRate.format(Number(latest.rate))}{' '}
                                     {pair.quote}
                                     {' · '}
-                                    {copy.effective}{' '}
                                     <time dateTime={latest.effective_date}>
-                                        {formatDate.format(
-                                            new Date(latest.effective_date),
+                                        {renderDate(
+                                            latest.effective_date,
+                                            'effective',
                                         )}
                                     </time>
                                 </p>
@@ -381,7 +426,7 @@ export default function ExchangeRates({
                             pair.base !== 'KHR' &&
                             pair.quote !== 'KHR' && (
                                 <p className="text-sm text-muted-foreground">
-                                    {copy.crossRate}
+                                    {translatedText('crossRate')}
                                 </p>
                             )}
                         {meta.sync_failed && !sameCurrency && (
@@ -389,35 +434,36 @@ export default function ExchangeRates({
                                 role="status"
                                 className="rounded-md border bg-muted px-3 py-2 text-sm"
                             >
-                                {copy.failed}
+                                {translatedText('failed')}
                             </p>
                         )}
                         {!sameCurrency && (
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                                <span>
-                                    {language === 'km'
-                                        ? copy.publisher
-                                        : meta.original_publisher}
-                                </span>
+                                <LanguageText
+                                    language={language}
+                                    en={meta.original_publisher}
+                                    km={translations.km.publisher}
+                                />
                                 <a
                                     href={meta.source_url}
-                                    className="inline-flex items-center gap-1 font-medium underline underline-offset-4"
+                                    className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-4"
                                 >
-                                    {copy.source}{' '}
+                                    {translatedText('source')}{' '}
                                     <ArrowUpRight
                                         aria-hidden="true"
                                         className="size-4"
                                     />
                                 </a>
                                 {meta.last_synced_at && (
-                                    <span className="text-muted-foreground">
-                                        {copy.synced}{' '}
-                                        <time dateTime={meta.last_synced_at}>
-                                            {formatDate.format(
-                                                new Date(meta.last_synced_at),
-                                            )}
-                                        </time>
-                                    </span>
+                                    <time
+                                        dateTime={meta.last_synced_at}
+                                        className="text-muted-foreground"
+                                    >
+                                        {renderDate(
+                                            meta.last_synced_at,
+                                            'synced',
+                                        )}
+                                    </time>
                                 )}
                             </div>
                         )}
@@ -426,13 +472,19 @@ export default function ExchangeRates({
 
                 {!sameCurrency && (
                     <>
-                        <Card>
+                        <Card className="min-w-0 rounded-2xl shadow-none">
                             <CardHeader>
                                 <CardTitle>
-                                    {copy.chart} · {pairLabel}
+                                    <h2 className="text-lg leading-tight">
+                                        <LanguageText
+                                            language={language}
+                                            en={`${translations.en.chart} · ${pairLabel}`}
+                                            km={`${translations.km.chart} · ${pairLabel}`}
+                                        />
+                                    </h2>
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground">
-                                    {copy.window}
+                                    {translatedText('window')}
                                 </p>
                             </CardHeader>
                             <CardContent
@@ -441,7 +493,7 @@ export default function ExchangeRates({
                             >
                                 <form
                                     onSubmit={filterHistory}
-                                    className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+                                    className="grid grid-cols-2 items-end gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
                                 >
                                     <div className="grid gap-2">
                                         <Label htmlFor="from">
@@ -479,13 +531,24 @@ export default function ExchangeRates({
                                     </div>
                                     <Button
                                         type="submit"
+                                        className="col-span-full sm:col-span-1"
                                         disabled={
                                             form.processing || updatingPair
                                         }
                                     >
-                                        {form.processing
-                                            ? copy.loading
-                                            : copy.apply}
+                                        <LanguageText
+                                            language={language}
+                                            en={
+                                                form.processing
+                                                    ? translations.en.loading
+                                                    : translations.en.apply
+                                            }
+                                            km={
+                                                form.processing
+                                                    ? translations.km.loading
+                                                    : translations.km.apply
+                                            }
+                                        />
                                     </Button>
                                     <InputError
                                         role="alert"
@@ -494,7 +557,7 @@ export default function ExchangeRates({
                                                 ? copy.invalidDates
                                                 : undefined
                                         }
-                                        className="sm:col-span-3"
+                                        className="col-span-full"
                                     />
                                 </form>
 
@@ -506,7 +569,7 @@ export default function ExchangeRates({
                                             filters.to,
                                         ].join('|')}
                                         rateLabel={rateLabel}
-                                        formatDate={formatDate}
+                                        renderDate={renderDate}
                                         formatRate={formatRate}
                                         points={dailyTrend}
                                     />
@@ -520,20 +583,26 @@ export default function ExchangeRates({
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="min-w-0 rounded-2xl shadow-none lg:col-span-2">
                             <CardHeader>
                                 <CardTitle>
-                                    {copy.history} · {pairLabel}
+                                    <h2 className="text-lg leading-tight">
+                                        <LanguageText
+                                            language={language}
+                                            en={`${translations.en.history} · ${pairLabel}`}
+                                            km={`${translations.km.history} · ${pairLabel}`}
+                                        />
+                                    </h2>
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground">
-                                    {copy.historyDescription}
+                                    {translatedText('historyDescription')}
                                 </p>
                                 {archiveUrl && (
                                     <a
                                         href={archiveUrl}
-                                        className="text-sm underline underline-offset-4"
+                                        className="text-sm font-medium text-primary underline underline-offset-4"
                                     >
-                                        {copy.archive}
+                                        {translatedText('archive')}
                                     </a>
                                 )}
                             </CardHeader>
@@ -545,17 +614,32 @@ export default function ExchangeRates({
                                             : copy.unavailable}
                                     </p>
                                 ) : (
-                                    <table className="w-full text-sm">
+                                    <table className="w-full table-fixed text-sm">
                                         <caption className="sr-only">
                                             {copy.history}
                                         </caption>
+                                        <colgroup>
+                                            <col className="w-[44%]" />
+                                            <col className="w-[36%]" />
+                                            <col />
+                                        </colgroup>
                                         <thead className="border-b text-left text-muted-foreground">
                                             <tr>
                                                 <th
                                                     scope="col"
                                                     className="py-2 font-medium"
                                                 >
-                                                    {copy.effective}
+                                                    <LanguageText
+                                                        language={language}
+                                                        en={
+                                                            translations.en
+                                                                .effective
+                                                        }
+                                                        km={
+                                                            translations.km
+                                                                .effective
+                                                        }
+                                                    />
                                                 </th>
                                                 <th
                                                     scope="col"
@@ -565,9 +649,19 @@ export default function ExchangeRates({
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="py-2 pl-4 text-right font-medium"
+                                                    className="py-2 pl-2 text-right font-medium sm:pl-4"
                                                 >
-                                                    {copy.provider}
+                                                    <LanguageText
+                                                        language={language}
+                                                        en={
+                                                            translations.en
+                                                                .provider
+                                                        }
+                                                        km={
+                                                            translations.km
+                                                                .provider
+                                                        }
+                                                    />
                                                 </th>
                                             </tr>
                                         </thead>
@@ -580,21 +674,19 @@ export default function ExchangeRates({
                                                                 entry.effective_date
                                                             }
                                                         >
-                                                            {formatDate.format(
-                                                                new Date(
-                                                                    entry.effective_date,
-                                                                ),
+                                                            {renderDate(
+                                                                entry.effective_date,
                                                             )}
                                                         </time>
                                                     </td>
-                                                    <td className="py-3 text-right tabular-nums">
+                                                    <td className="py-3 text-right break-words tabular-nums">
                                                         {formatRate.format(
                                                             Number(entry.rate) /
                                                                 entry.unit,
                                                         )}{' '}
                                                         {entry.quote_currency}
                                                     </td>
-                                                    <td className="py-3 pl-4 text-right text-muted-foreground">
+                                                    <td className="py-3 pl-2 text-right text-muted-foreground sm:pl-4">
                                                         {entry.access_provider ===
                                                         'DataEF'
                                                             ? 'DataEF'
@@ -660,10 +752,7 @@ export default function ExchangeRates({
                         </Card>
                     </>
                 )}
-                <footer className="text-sm text-muted-foreground">
-                    {copy.disclaimer}
-                </footer>
-            </main>
-        </div>
+            </div>
+        </PublicLayout>
     );
 }

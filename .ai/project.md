@@ -1,18 +1,19 @@
 # Project map
 
-The Cambodia Open Data Platform will publish sourced fuel prices and exchange
-rates in Khmer (`km`) and English (`en`). It is an independent public-information
-site. Show the original publisher, attribution, effective date, and freshness
+Klaing KH is an independent public data portal for everyday life in Cambodia.
+It publishes exchange rates and administrative areas in Khmer (`km`) and English
+(`en`). Show the original publisher, attribution, effective date, and freshness
 where users read market data.
 
 ## Repository today
 
 | Area                                                                 | Entry point                                                                                                                                  |
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public welcome page and authenticated team dashboard                 | [Web routes](../routes/web.php), [React pages](../resources/js/pages)                                                                        |
+| Klaing KH home and authenticated team dashboard                      | [Home page](../resources/js/pages/welcome.tsx), [web routes](../routes/web.php)                                                              |
 | Fortify authentication, passkeys, registration, and account settings | [Fortify config](../config/fortify.php), [provider](../app/Providers/FortifyServiceProvider.php), [settings routes](../routes/settings.php)  |
 | Team membership, roles, and invitations                              | [Team controllers](../app/Http/Controllers/Teams), [TeamPolicy](../app/Policies/TeamPolicy.php), [invitation cleanup](../routes/console.php) |
 | API                                                                  | [Sanctum-authenticated user endpoint](../routes/api.php)                                                                                     |
+| Public administrative-area directory and API                         | [Public page](../resources/js/pages/administrative-areas.tsx), [API routes](../routes/api.php)                                               |
 | Frontend composition and shared UI                                   | [Inertia entry point](../resources/js/app.tsx), [UI primitives](../resources/js/components/ui), [theme](../resources/css/app.css)            |
 | Local, test, and CI configuration                                    | [Environment example](../.env.example), [Pest setup](../tests/Pest.php), [CI workflow](../.github/workflows/tests.yml)                       |
 
@@ -33,6 +34,11 @@ source permissions, enable both `DATAEF_SYNC_ENABLED` and
 `php artisan dataef:sync-exchange-rates --no-interaction` with a worker serving the
 `ingestion` queue. The daily scheduler uses Phnom Penh time. External API access
 is separately controlled by `PUBLIC_EXTERNAL_API_ENABLED`.
+
+The administrative-area directory at `/administrative-areas` and read API at
+`/api/v1/administrative-areas` use the 2025 Cambodia CSVs in `public/assets`.
+After migrating, run `php artisan db:seed --class=AdministrativeAreaSeeder --no-interaction`
+to load all four levels.
 
 Registration is currently enabled in Fortify. The MVP calls for admin-only
 accounts with public self-registration disabled.
