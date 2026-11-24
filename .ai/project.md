@@ -16,21 +16,35 @@ where users read market data.
 | Frontend composition and shared UI                                   | [Inertia entry point](../resources/js/app.tsx), [UI primitives](../resources/js/components/ui), [theme](../resources/css/app.css)            |
 | Local, test, and CI configuration                                    | [Environment example](../.env.example), [Pest setup](../tests/Pest.php), [CI workflow](../.github/workflows/tests.yml)                       |
 
-The committed application contains starter-kit flows. The dataset registry,
-market-data pipelines and pages, `/api/v1` endpoints, and admin sync controls are
-planned. Registration is currently enabled in Fortify. The MVP calls for
-admin-only accounts with public self-registration disabled.
+The exchange-rate page converts amounts between currencies in the DataEF feed
+and charts daily rates for the selected pair. Cross rates use both currencies'
+published riel quotes for the same date. For USD/KHR in either direction, the
+page can fill earlier dates from the NBC rates republished by the General
+Department of Taxation (GDT). DataEF takes precedence on overlapping dates.
+The existing `/api/v1/exchange-rates` endpoints return the DataEF USD/KHR series.
 
-## Implementation order
+To import a downloaded official English GDT exchange-rate page, use
+`php artisan exchange-rates:import-history <file> --no-interaction`. The import
+validates the rates and stores their source separately.
+
+Run `php artisan migrate --no-interaction` before using the page. After confirming
+source permissions, enable both `DATAEF_SYNC_ENABLED` and
+`DATAEF_NBC_EXCHANGE_RATE_ENABLED`, then run
+`php artisan dataef:sync-exchange-rates --no-interaction` with a worker serving the
+`ingestion` queue. The daily scheduler uses Phnom Penh time. External API access
+is separately controlled by `PUBLIC_EXTERNAL_API_ENABLED`.
+
+Registration is currently enabled in Fortify. The MVP calls for admin-only
+accounts with public self-registration disabled.
+
+## Remaining work
 
 1. Ship the fuel-price history slice for gasoline 92 and diesel. Build the
    source registry, audited ingestion, persisted history, read API, and public
    page together.
-2. Verify the NBC exchange-rate endpoint, payload, and currency direction.
-   Implement the confirmed pair using the same path from ingestion to display.
-3. Add a public dashboard and sources page, Khmer/English localization, and
+2. Add a public dashboard and sources page, Khmer/English localization, and
    policy-protected source status, sync history, and manual sync.
-4. Validate the production setup on staging. The target is a single Laravel
+3. Validate the production setup on staging. The target is a single Laravel
    application on Ubuntu with Nginx/PHP-FPM, MySQL 8.4, database-backed queue and
    cache, supervised workers, and a scheduler. Check backups, restoration,
    monitoring, and rollback before requesting release approval.
@@ -39,8 +53,10 @@ admin-only accounts with public self-registration disabled.
 
 - Confirm unit price versus change columns against source records and official
   announcements before enabling the fuel importer. Start with the [DataEF fuel dataset](https://data.mef.gov.kh/datasets/pd_681d89b4dbc953000126f5e7).
-- Verify the exchange-rate endpoint and payload before enabling live ingestion.
-  Start with the [NBC exchange-rate dataset](https://data.mef.gov.kh/datasets/pd_66a0cd503e0bd300012638fb4).
+- The NBC importer uses the verified DataEF bulk real-time endpoint.
+  [NBC exchange-rate dataset](https://data.mef.gov.kh/datasets/pd_66a0cd503e0bd300012638fb4)
+- The historical import uses published NBC USD/KHR observations.
+  [GDT rate archive](https://www.tax.gov.kh/gdtwebsiteweb/en/exchange-rate)
 - Check dataset-specific permissions and record the original publisher and
   license status. Consult the [DataEF terms](https://data.mef.gov.kh/km/terms-of-use)
   and [data access guide](https://data.mef.gov.kh/user-guide/data-consumer/get-access-to-data).
