@@ -2,13 +2,12 @@ import { Head, Link } from '@inertiajs/react';
 import type { InertiaLinkProps } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import AppLogo from '@/components/app-logo';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { home } from '@/routes';
 import { index as administrativeAreas } from '@/routes/administrative-areas';
 import { index as exchangeRates } from '@/routes/exchange-rates';
-
-export const publicBrand = 'Klaing KH';
 
 export type PublicLanguage = 'en' | 'km';
 type PublicSection = 'home' | 'rates' | 'areas';
@@ -87,12 +86,7 @@ export default function PublicLayout({
                         href={home({ query })}
                         className="flex min-h-10 shrink-0 items-center gap-2.5 rounded-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-4"
                     >
-                        {/* <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
-                            <Database aria-hidden="true" className="size-4.5" />
-                        </span> */}
-                        <span className="text-lg tracking-tight" lang="en">
-                            {publicBrand}
-                        </span>
+                        <AppLogo />
                     </Link>
                     <div className="order-last grid basis-full grid-cols-[auto_minmax(0,1fr)_minmax(0,1.25fr)] gap-1 pt-2 text-sm md:order-none md:flex md:basis-auto md:gap-x-1.5 md:pt-0">
                         {navigation.map((item) => (
@@ -159,7 +153,7 @@ export default function PublicLayout({
                             lang="en"
                             className="font-semibold text-foreground"
                         >
-                            {publicBrand}
+                            <AppLogo />
                         </span>
                         <span aria-hidden="true"> · </span>
                         {copy.about}

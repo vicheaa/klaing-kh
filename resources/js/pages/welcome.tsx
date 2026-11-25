@@ -1,11 +1,9 @@
 import { Link, usePage } from '@inertiajs/react';
 import { ArrowDown, ArrowLeftRight, ArrowRight, MapPinned } from 'lucide-react';
+import { publicBrand } from '@/components/app-logo';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import PublicLayout, {
-    LanguageText,
-    publicBrand,
-} from '@/layouts/public-layout';
+import PublicLayout, { LanguageText } from '@/layouts/public-layout';
 import type { PublicLanguage } from '@/layouts/public-layout';
 import { home } from '@/routes';
 import { index as administrativeAreas } from '@/routes/administrative-areas';

@@ -51,7 +51,15 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <Link href={dashboardUrl} prefetch>
-                                <AppLogo />
+                                <span className="group-data-[collapsible=icon]:sr-only">
+                                    <AppLogo />
+                                </span>
+                                <span
+                                    aria-hidden="true"
+                                    className="hidden w-full text-center font-semibold group-data-[collapsible=icon]:block"
+                                >
+                                    KH
+                                </span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -68,7 +76,7 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
+                {/* <NavFooter items={footerNavItems} className="mt-auto" /> */}
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
