@@ -49,6 +49,28 @@ test('users can authenticate using the login screen', function () {
     $response->assertRedirect(route('dashboard'));
 });
 
+test('login redirects trust the forwarded HTTPS scheme only from a configured proxy', function (string $remoteAddress, string $expectedScheme) {
+    $user = User::factory()->create();
+
+    $response = $this->withServerVariables(['REMOTE_ADDR' => $remoteAddress])
+        ->withHeaders([
+            'Accept' => 'text/html, application/xhtml+xml',
+            'X-Forwarded-Proto' => 'https',
+            'X-Inertia' => 'true',
+            'X-Requested-With' => 'XMLHttpRequest',
+        ])
+        ->post('http://klaing.test/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+    $this->assertAuthenticatedAs($user);
+    $response->assertRedirect("{$expectedScheme}://klaing.test/{$user->currentTeam->slug}/dashboard");
+})->with([
+    'trusted proxy' => ['192.0.2.10', 'https'],
+    'untrusted address' => ['192.0.2.20', 'http'],
+]);
+
 test('passkey login response redirects to the current team dashboard', function () {
     $user = User::factory()->create();
 
