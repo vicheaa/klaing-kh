@@ -182,9 +182,14 @@ function CurrencySelect({
             <Select value={value} onValueChange={onChange} disabled={disabled}>
                 <SelectTrigger
                     id={id}
-                    className="w-full min-w-0 *:data-[slot=select-value]:block *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:truncate max-sm:gap-1 max-sm:px-2"
+                    className="w-full min-w-0 max-sm:gap-1 max-sm:px-2"
                 >
-                    <SelectValue />
+                    <span aria-hidden="true" className="sm:hidden">
+                        {value}
+                    </span>
+                    <span className="min-w-0 truncate max-sm:sr-only">
+                        <SelectValue />
+                    </span>
                 </SelectTrigger>
                 <SelectContent className="public-theme" avoidCollisions>
                     {currencies.map((currency) => {

@@ -82,7 +82,7 @@ export function DailyExchangeRateChart({
                           (right - left)
                     : (left + right) / 2;
 
-            context.font = '12px system-ui';
+            context.font = `${theme.fontWeight} 12px ${theme.fontFamily}`;
             context.textBaseline = 'middle';
             context.textAlign = 'right';
             context.fillStyle = theme.color;
@@ -131,9 +131,13 @@ export function DailyExchangeRateChart({
 
         const observer = new ResizeObserver(draw);
         observer.observe(element);
+        document.fonts.addEventListener('loadingdone', draw);
         draw();
 
-        return () => observer.disconnect();
+        return () => {
+            observer.disconnect();
+            document.fonts.removeEventListener('loadingdone', draw);
+        };
     }, [activePoint, elapsed, firstDate, formatRate, points]);
 
     function showNearestPoint(event: PointerEvent<HTMLCanvasElement>) {
